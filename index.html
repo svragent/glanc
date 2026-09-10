@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flatplan Editor - Smooth Drag</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #f5f3ee;
+    --bg-raised: #ffffff;
+    --paper-empty: #e8e6de;
+    --ink: #2a2a26;
+    --ink-dim: #6b6a63;
+    --line: #d8d5cb;
+    --red: #c23b3b;
+    --amber: #d99a3f;
+    --green: #5b8c5a;
+    
+    --dept-redakce: #38bdf8;
+    --dept-moda: #e879f9;
+    --dept-inzerce: #facc15;
+    --dept-kultura: #4ade80;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; height:100vh; overflow:hidden;
+  }
+
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:100; background:var(--bg);
+    border-bottom:1px solid var(--line); padding:12px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .masthead{display:flex; align-items:baseline; gap:14px;}
+  .masthead input{
+    font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:1px;
+    background:none; border:none; color:var(--ink); outline:none;
+    border-bottom:1px solid transparent;
+  }
+  .masthead input:focus{border-bottom:1px solid var(--red);}
+  .dates-bar{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .dates-bar label{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim);
+    display:flex; align-items:center; gap:6px;
+  }
+  .dates-bar input[type=date]{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink);
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:3px;
+    padding:4px 6px;
+  }
+  .toolbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .toolbar label, .toolbar button{
+    font-family:'Inter',sans-serif; font-size:12px; font-weight:500;
+    color:var(--ink); background:var(--bg-raised); border:1px solid var(--line);
+    padding:6px 10px; border-radius:3px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .toolbar label:hover, .toolbar button:hover{border-color:var(--ink-dim);}
+  .toolbar input[type=file]{display:none;}
+  .toolbar .count{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-dim); padding:0 4px;
+  }
+  .watch-active {
+    background: #2c4a2b !important;
+    border-color: var(--green) !important;
+    color: #fff !important;
+  }
+
+  #viewport {
+    width: 100vw;
+    height: 100vh;
+    padding-top: 70px;
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    user-select: none;
+  }
+  #viewport.is-dragging {
+    cursor: grabbing !important;
+  }
+  #canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    padding: 100px;
+  }
+  
+  main#grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(160px,1fr));
+    gap:20px 10px; width: 1400px; margin:0 auto;
+    position: relative;
+  }
+
+  .page-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.2, 0, 0.1, 1), border-color 0.15s ease, box-shadow 0.15s ease;
+    will-change: transform;
+  }
+
+  /* Výrazné označení rámečkem při najetí myší */
+  .page-card:hover {
+    border-color: var(--dept-redakce);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+  }
+
+  .page-card.is-ghost {
+    opacity: 0.2;
+    border: 2px dashed var(--red) !important;
+  }
+
+  .drag-clone {
+    position: fixed !important;
+    z-index: 9999 !important;
+    pointer-events: none !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+    transform: scale(1.05);
+    opacity: 0.95;
+    transition: none !important;
+  }
+
+  .page-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--line);
+    gap: 4px;
+  }
+
+  .page-header-bar .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .page-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    margin-right: 2px;
+  }
+
+  .dept-select {
+    font-size: 9px;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 1px 2px;
+    outline: none;
+    cursor: pointer;
+    max-width: 65px;
+  }
+
+  .status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .status.missing{background:var(--red);}
+  .status.draft{background:var(--amber);}
+  .status.ready{background:var(--green);}
+
+  .page {
+    position: relative;
+    aspect-ratio: 210/297;
+    background: var(--paper-empty);
+    border-top: 3px solid var(--dept-redakce);
+    overflow: hidden;
+    user-select: none;
+  }
+  .page[data-dept="moda"] { border-top-color: var(--dept-moda); }
+  .page[data-dept="inzerce"] { border-top-color: var(--dept-inzerce); }
+  .page[data-dept="kultura"] { border-top-color: var(--dept-kultura); }
+
+  .page.spine-left{box-shadow:inset -4px 0 8px -3px rgba(0,0,0,.7);}
+  .page.spine-right{box-shadow:inset 4px 0 8px -3px rgba(0,0,0,.7);}
+
+  .page canvas.page-render{
+    width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;
+  }
+
+  .page .empty-hint{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:6px;
+    color:var(--ink-dim); font-size:11px; font-family:'IBM Plex Mono',monospace;
+    text-align:center; padding:8px; cursor:pointer;
+  }
+
+  .action-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+  .action-btn:hover { border-color: var(--ink-dim); background: var(--bg-raised); }
+
+  .page-footer-bar {
+    padding: 4px;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid var(--line);
+  }
+
+  .page-footer-bar .note {
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    color: var(--ink);
+    border: none;
+    outline: none;
+    width: 100%;
+  }
+
+  #modal{
+    position:fixed; inset:0; background:rgba(245,243,238,.94);
+    display:none; align-items:center; justify-content:center; z-index:1000; padding:40px;
+  }
+  #modal.open{display:flex;}
+  #modal img{max-width:100%; max-height:100%; box-shadow:0 0 40px rgba(0,0,0,.6);}
+  #modal .close{position:absolute; top:24px; right:32px; color:var(--ink); font-size:28px; cursor:pointer;}
+
+  .hint-banner {
+    font-size: 11px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace;
+    margin-right: 8px;
+  }
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<header>
+  <div class="masthead">
+    <input id="title" value="GLANC" onchange="saveData()"/>
+  </div>
+  <div class="dates-bar">
+    <label>Vychází:
+      <input type="date" id="dateVychazi" onchange="saveData()"/>
+    </label>
+    <label>Data do tiskárny:
+      <input type="date" id="dateTiskarna" onchange="saveData()"/>
+    </label>
+  </div>
+  <div class="toolbar">
+    <span class="hint-banner">🖱️ Levé tl. = Posun | Pravé tl. = Přesun karty (s animací)</span>
+    <span class="count" id="pageCount">0 stran</span>
+    <button id="watchBtn" onclick="toggleWatchFolder()">📁 Sledovat složku</button>
+    <button onclick="addSlot()">+ Přidat stránku</button>
+    <label>Nahrát Soubory
+      <input type="file" id="bulkUpload" accept="image/*,application/pdf" multiple onchange="bulkUpload(event)">
+    </label>
+    <button onclick="resetZoom()">100% Zoom</button>
+    <button onclick="exportJSON()">Uložit JSON</button>
+    <label>Načíst JSON
+      <input type="file" accept=".json" onchange="importJSON(event)">
+    </label>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="clearAll()" style="color:var(--red);">Vymazat vše</button>
+  </div>
+</header>
+
+<div id="viewport">
+  <div id="canvas">
+    <main id="grid"></main>
+  </div>
+</div>
+
+<div id="modal" onclick="closeModal()">
+  <span class="close">&times;</span>
+  <img id="modalImg" src="">
+</div>
+
+<input type="file" id="replaceInput" accept="image/*,application/pdf" style="display:none;" onchange="executeReplace(event)">
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let pages = [];
+let replacingIdx = null;
+
+let dirHandle = null;
+let fileTimestamps = {};
+let watchInterval = null;
+let isScanning = false;
+
+// Zoom a Pan nastavení
+const viewport = document.getElementById('viewport');
+const canvas = document.getElementById('canvas');
+let scale = 1;
+let pointX = 50;
+let pointY = 80;
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+const MIN_SCALE = 0.2;
+const MAX_SCALE = 12.0; 
+
+// STABILNÍ DRAG & DROP PRO PRAVÉ TLAČÍTKO
+let originalCard = null;
+let cloneCard = null;
+let dragStartIndex = -1;
+let dragCurrentIndex = -1;
+let offsetX = 0;
+let offsetY = 0;
+
+function setupSmoothRightClickDrag() {
+  const grid = document.getElementById('grid');
+
+  grid.addEventListener('mousedown', (e) => {
+    if (e.button !== 2) return; // Pouze pravé tlačítko
+
+    const card = e.target.closest('.page-card');
+    if (!card || ['INPUT', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
+
+    originalCard = card;
+    const cards = Array.from(grid.children);
+    dragStartIndex = cards.indexOf(card);
+    dragCurrentIndex = dragStartIndex;
+
+    const rect = card.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    // Vytvoření odlehčeného plovoucího klonu
+    cloneCard = card.cloneNode(true);
+    cloneCard.classList.add('drag-clone');
+    cloneCard.style.width = `${rect.width}px`;
+    cloneCard.style.height = `${rect.height}px`;
+    cloneCard.style.left = `${rect.left}px`;
+    cloneCard.style.top = `${rect.top}px`;
+    
+    // Zkopírování obsahu plátna (Canvas renderu) do klonu
+    const origCanvas = card.querySelector('canvas');
+    const cloneCanvas = cloneCard.querySelector('canvas');
+    if (origCanvas && cloneCanvas) {
+      const ctx = cloneCanvas.getContext('2d');
+      cloneCanvas.width = origCanvas.width;
+      cloneCanvas.height = origCanvas.height;
+      ctx.drawImage(origCanvas, 0, 0);
+    }
+
+    document.body.appendChild(cloneCard);
+    originalCard.classList.add('is-ghost');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!cloneCard) return;
+
+    // Pohyb klonu přesně podle kurzoru
+    cloneCard.style.left = `${e.clientX - offsetX}px`;
+    cloneCard.style.top = `${e.clientY - offsetY}px`;
+
+    // Detekce prvku pod kursořem
+    const cards = Array.from(grid.children);
+    const targetCard = cards.find(c => {
+      if (c === originalCard) return false;
+      const r = c.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    });
+
+    if (targetCard) {
+      const targetIndex = cards.indexOf(targetCard);
+      if (targetIndex !== dragCurrentIndex) {
+        dragCurrentIndex = targetIndex;
+        
+        // Plynulý posun prvků v DOMu
+        if (dragStartIndex < targetIndex) {
+          grid.insertBefore(originalCard, targetCard.nextSibling);
+        } else {
+          grid.insertBefore(originalCard, targetCard);
+        }
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (e.button === 2 && cloneCard) {
+      cloneCard.remove();
+      cloneCard = null;
+
+      if (originalCard) {
+        originalCard.classList.remove('is-ghost');
+      }
+
+      if (dragStartIndex !== -1 && dragStartIndex !== dragCurrentIndex) {
+        const movedItem = pages.splice(dragStartIndex, 1)[0];
+        pages.splice(dragCurrentIndex, 0, movedItem);
+        saveData();
+        render();
+      }
+
+      originalCard = null;
+      dragStartIndex = -1;
+      dragCurrentIndex = -1;
+    }
+  });
+}
+
+function updateTransform() {
+  canvas.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+}
+
+function resetZoom() {
+  scale = 1;
+  pointX = 50;
+  pointY = 80;
+  updateTransform();
+}
+
+function initData() {
+  const saved = localStorage.getItem('flatplan_pages');
+  const savedTitle = localStorage.getItem('flatplan_title');
+  if (savedTitle) document.getElementById('title').value = savedTitle;
+  const savedVychazi = localStorage.getItem('flatplan_date_vychazi');
+  if (savedVychazi) document.getElementById('dateVychazi').value = savedVychazi;
+  const savedTiskarna = localStorage.getItem('flatplan_date_tiskarna');
+  if (savedTiskarna) document.getElementById('dateTiskarna').value = savedTiskarna;
+  
+  if (saved) {
+    pages = JSON.parse(saved);
+  } else {
+    for(let i=0; i<8; i++) pages.push(newPage());
+  }
+  render();
+  setupFolderDrop();
+  setupPanAndZoom();
+  setupSmoothRightClickDrag();
+}
+
+function saveData() {
+  localStorage.setItem('flatplan_pages', JSON.stringify(pages));
+  localStorage.setItem('flatplan_title', document.getElementById('title').value);
+  localStorage.setItem('flatplan_date_vychazi', document.getElementById('dateVychazi').value);
+  localStorage.setItem('flatplan_date_tiskarna', document.getElementById('dateTiskarna').value);
+}
+
+function newPage(){
+  return { id: crypto.randomUUID(), pdfData: null, pdfPageIndex: 1, img: null, status: 'missing', department: 'redakce', note: '' };
+}
+
+function addSlot(){
+  pages.push(newPage());
+  saveData();
+  render();
+}
+
+function clearAll(){
+  if(confirm("Opravdu chceš vymazat celou plachtu?")) {
+    pages = [];
+    for(let i=0; i<8; i++) pages.push(newPage());
+    saveData();
+    render();
+  }
+}
+
+// POSUN PLOCHY (PAN) LEVÝM TLAČÍTKO A ZOOM BEZ RE-RENDEROVÁNÍ
+function setupPanAndZoom() {
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = -e.deltaY;
+    const factor = Math.exp(delta * 0.0015);
+    const targetScale = Math.min(Math.max(MIN_SCALE, scale * factor), MAX_SCALE);
+
+    const rect = viewport.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    pointX = mouseX - (mouseX - pointX) * (targetScale / scale);
+    pointY = mouseY - (mouseY - pointY) * (targetScale / scale);
+    scale = targetScale;
+
+    updateTransform();
+  }, { passive: false });
+
+  viewport.addEventListener('mousedown', (e) => {
+    if (e.button === 0 && !['INPUT', 'SELECT', 'BUTTON'].includes(e.target.tagName) && !e.target.classList.contains('status') && !e.target.classList.contains('empty-hint')) {
+      isPanning = true;
+      startX = e.clientX - pointX;
+      startY = e.clientY - pointY;
+      viewport.classList.add('is-dragging');
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    pointX = e.clientX - startX;
+    pointY = e.clientY - startY;
+    updateTransform();
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (isPanning && e.button === 0) {
+      isPanning = false;
+      viewport.classList.remove('is-dragging');
+    }
+  });
+
+  updateTransform();
+}
+
+function setupFolderDrop() {
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const items = e.dataTransfer.items;
+    let files = [];
+
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+          if (entry) {
+            await scanEntry(entry, files);
+          } else {
+            const f = item.getAsFile();
+            if (f) files.push(f);
+          }
+        }
+      }
+    }
+    
+    if (files.length > 0) {
+      files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+      for (const file of files) {
+        if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
+          await processPDF(file);
+        } else if (file.type.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png)$/i)) {
+          await processImage(file);
+        }
+      }
+      saveData();
+      render();
+    }
+  });
+}
+
+async function scanEntry(entry, fileList) {
+  if (entry.isFile) {
+    await new Promise((resolve) => {
+      entry.file((f) => {
+        if (f.name.match(/\.(pdf|jpg|jpeg|png)$/i)) fileList.push(f);
+        resolve();
+      });
+    });
+  } else if (entry.isDirectory) {
+    const reader = entry.createReader();
+    const entries = await new Promise((resolve) => reader.readEntries(resolve));
+    for (const childEntry of entries) {
+      await scanEntry(childEntry, fileList);
+    }
+  }
+}
+
+async function bulkUpload(e){
+  const files = Array.from(e.target.files);
+  files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+  for (const file of files) {
+    if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
+      await processPDF(file);
+    } else {
+      await processImage(file);
+    }
+  }
+  e.target.value = '';
+  saveData();
+  render();
+}
+
+function processImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if(replacingIdx !== null) {
+        pages[replacingIdx].img = e.target.result;
+        pages[replacingIdx].pdfData = null;
+        pages[replacingIdx].status = 'draft';
+      } else {
+        insertImageToGrid(e.target.result, null);
+      }
+      resolve();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function processPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64Pdf = btoa(binary);
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    if(replacingIdx !== null) {
+      pages[replacingIdx].pdfData = base64Pdf;
+      pages[replacingIdx].pdfPageIndex = i;
+      pages[replacingIdx].img = null;
+      pages[replacingIdx].status = 'draft';
+      break;
+    } else {
+      insertImageToGrid(null, base64Pdf, i);
+    }
+  }
+}
+
+function insertImageToGrid(imgUrl, pdfData = null, pageIdx = 1) {
+  let emptyIdx = pages.findIndex(p => !p.img && !p.pdfData);
+  if (emptyIdx !== -1) {
+    pages[emptyIdx].img = imgUrl;
+    pages[emptyIdx].pdfData = pdfData;
+    pages[emptyIdx].pdfPageIndex = pageIdx;
+    pages[emptyIdx].status = 'draft';
+  } else {
+    const p = newPage();
+    p.img = imgUrl;
+    p.pdfData = pdfData;
+    p.pdfPageIndex = pageIdx;
+    p.status = 'draft';
+    pages.push(p);
+  }
+}
+
+async function toggleWatchFolder() {
+  if (!window.showDirectoryPicker) {
+    alert("Tvá verze prohlížeče nepodporuje živé sledování složky.");
+    return;
+  }
+
+  if (watchInterval) {
+    clearInterval(watchInterval);
+    watchInterval = null;
+    dirHandle = null;
+    document.getElementById('watchBtn').classList.remove('watch-active');
+    document.getElementById('watchBtn').textContent = "📁 Sledovat složku";
+    return;
+  }
+
+  try {
+    dirHandle = await window.showDirectoryPicker();
+    document.getElementById('watchBtn').classList.add('watch-active');
+    document.getElementById('watchBtn').textContent = `🟢 Sleduji: ${dirHandle.name}`;
+    
+    watchInterval = setInterval(scanFolderForChanges, 3000);
+    scanFolderForChanges();
+  } catch (err) {
+    console.log("Výběr složky zrušen.", err);
+  }
+}
+
+async function scanFolderForChanges() {
+  if (!dirHandle || isScanning) return;
+  isScanning = true;
+
+  try {
+    let fileList = [];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file' && entry.name.match(/\.(pdf|jpg|jpeg|png)$/i)) {
+        const file = await entry.getFile();
+        fileList.push(file);
+      }
+    }
+
+    fileList.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+
+    let hasChanges = false;
+
+    for (const file of fileList) {
+      const lastMod = file.lastModified;
+      if (!fileTimestamps[file.name] || fileTimestamps[file.name] !== lastMod) {
+        fileTimestamps[file.name] = lastMod;
+        hasChanges = true;
+        
+        if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
+          await processPDF(file);
+        } else {
+          await processImage(file);
+        }
+      }
+    }
+
+    if (hasChanges) {
+      saveData();
+      render();
+    }
+  } catch (err) {
+    console.error("Chyba při skenování:", err);
+  } finally {
+    isScanning = false;
+  }
+}
+
+function triggerReplace(idx) {
+  replacingIdx = idx;
+  document.getElementById('replaceInput').click();
+}
+
+async function executeReplace(e) {
+  const file = e.target.files[0];
+  if(!file || replacingIdx === null) return;
+  
+  if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
+    await processPDF(file);
+  } else {
+    await processImage(file);
+  }
+  
+  replacingIdx = null;
+  e.target.value = '';
+  saveData();
+  render();
+}
+
+function removePage(idx){
+  pages[idx].img = null;
+  pages[idx].pdfData = null;
+  pages[idx].status = 'missing';
+  saveData();
+  render();
+}
+
+function cycleStatus(idx){
+  const order = ['missing','draft','ready'];
+  pages[idx].status = order[(order.indexOf(pages[idx].status) + 1) % order.length];
+  saveData();
+  render();
+}
+
+function updateDept(idx, dept){
+  pages[idx].department = dept;
+  saveData();
+  render();
+}
+
+function updateNote(idx, val){
+  pages[idx].note = val;
+  saveData();
+}
+
+function openModal(canvasOrImgSrc){
+  document.getElementById('modalImg').src = canvasOrImgSrc;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+
+function exportJSON() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+    title: document.getElementById('title').value,
+    dateVychazi: document.getElementById('dateVychazi').value,
+    dateTiskarna: document.getElementById('dateTiskarna').value,
+    pages: pages
+  }));
+  const a = document.createElement('a');
+  a.href = dataStr;
+  a.download = (document.getElementById('title').value || 'flatplan') + '_backup.json';
+  a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
+      if(data.pages) {
+        pages = data.pages;
+        if(data.title) document.getElementById('title').value = data.title;
+        if(data.dateVychazi) document.getElementById('dateVychazi').value = data.dateVychazi;
+        if(data.dateTiskarna) document.getElementById('dateTiskarna').value = data.dateTiskarna;
+        saveData();
+        render();
+      }
+    } catch(err) {
+      alert("Chyba při načítání JSON souboru.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// Stránky se vykreslují jednorázově ve vysoké kvalitě (scale = 3.0), aby nebylo nutné překreslovat při zoomu
+async function renderCanvasPage(pageObj, canvasEl) {
+  if (pageObj.pdfData) {
+    const raw = atob(pageObj.pdfData);
+    const uint8Array = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) {
+      uint8Array[i] = raw.charCodeAt(i);
+    }
+    const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+    const page = await pdf.getPage(pageObj.pdfPageIndex || 1);
+    
+    const viewportPdf = page.getViewport({ scale: 3.0 });
+    
+    const ctx = canvasEl.getContext('2d');
+    canvasEl.height = viewportPdf.height;
+    canvasEl.width = viewportPdf.width;
+
+    await page.render({ canvasContext: ctx, viewport: viewportPdf }).promise;
+  } else if (pageObj.img) {
+    const img = new Image();
+    img.src = pageObj.img;
+    img.onload = () => {
+      canvasEl.width = img.naturalWidth || 600;
+      canvasEl.height = img.naturalHeight || 800;
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+    };
+  }
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  pages.forEach((p, idx)=>{
+    const isRight = idx === 0 ? true : (idx % 2 === 1);
+    
+    const card = document.createElement('div');
+    card.className = 'page-card';
+
+    const headerBar = document.createElement('div');
+    headerBar.className = 'page-header-bar';
+
+    const num = document.createElement('div');
+    num.className = 'num';
+    num.textContent = idx + 1;
+    headerBar.appendChild(num);
+
+    const select = document.createElement('select');
+    select.className = 'dept-select';
+    select.onmousedown = (e) => e.stopPropagation();
+    select.onchange = (e) => updateDept(idx, e.target.value);
+    ['redakce', 'moda', 'inzerce', 'kultura'].forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d.toUpperCase();
+      if(p.department === d) opt.selected = true;
+      select.appendChild(opt);
+    });
+    headerBar.appendChild(select);
+
+    // Skupina pro tlačítka v liště
+    const actionsGroup = document.createElement('div');
+    actionsGroup.className = 'page-actions-group';
+
+    if (p.pdfData || p.img) {
+      const zoom = document.createElement('button');
+      zoom.className = 'action-btn';
+      zoom.title = 'Zvětšit';
+      zoom.textContent = '⤢';
+      zoom.onmousedown = (e) => e.stopPropagation();
+      zoom.onclick = (e)=>{ 
+        e.stopPropagation(); 
+        const canvasEl = document.getElementById(`page-canvas-${idx}`);
+        if(canvasEl) openModal(canvasEl.toDataURL()); 
+      };
+      actionsGroup.appendChild(zoom);
+
+      const replace = document.createElement('button');
+      replace.className = 'action-btn';
+      replace.title = 'Nahradit tuto stránku';
+      replace.textContent = '⇄';
+      replace.onmousedown = (e) => e.stopPropagation();
+      replace.onclick = (e)=>{ e.stopPropagation(); triggerReplace(idx); };
+      actionsGroup.appendChild(replace);
+
+      const rm = document.createElement('button');
+      rm.className = 'action-btn';
+      rm.title = 'Vymazat vizuál';
+      rm.textContent = '✕';
+      rm.onmousedown = (e) => e.stopPropagation();
+      rm.onclick = (e)=>{ e.stopPropagation(); removePage(idx); };
+      actionsGroup.appendChild(rm);
+    }
+
+    headerBar.appendChild(actionsGroup);
+
+    const status = document.createElement('div');
+    status.className = 'status ' + p.status;
+    status.title = 'Změnit stav';
+    status.onmousedown = (e) => e.stopPropagation();
+    status.onclick = (e)=>{ e.stopPropagation(); cycleStatus(idx); };
+    headerBar.appendChild(status);
+
+    card.appendChild(headerBar);
+
+    const pageDiv = document.createElement('div');
+    pageDiv.className = `page ${isRight ? 'spine-right' : 'spine-left'}`;
+    pageDiv.dataset.dept = p.department;
+    pageDiv.dataset.id = p.id;
+
+    if(p.pdfData || p.img){
+      const canvasEl = document.createElement('canvas');
+      canvasEl.className = 'page-render';
+      canvasEl.id = `page-canvas-${idx}`;
+      pageDiv.appendChild(canvasEl);
+
+      setTimeout(() => renderCanvasPage(p, canvasEl), 0);
+    } else {
+      const hint = document.createElement('div');
+      hint.className = 'empty-hint';
+      hint.innerHTML = '<span>+</span>Prázdné';
+      hint.onmousedown = (e) => e.stopPropagation();
+      hint.onclick = (e) => { e.stopPropagation(); triggerReplace(idx); };
+      pageDiv.appendChild(hint);
+    }
+
+    card.appendChild(pageDiv);
+
+    const footerBar = document.createElement('div');
+    footerBar.className = 'page-footer-bar';
+
+    const note = document.createElement('input');
+    note.className = 'note';
+    note.placeholder = 'poznámka…';
+    note.value = p.note;
+    note.onmousedown = (e) => e.stopPropagation();
+    note.oninput = (e)=> updateNote(idx, e.target.value);
+    footerBar.appendChild(note);
+
+    card.appendChild(footerBar);
+
+    grid.appendChild(card);
+  });
+
+  document.getElementById('pageCount').textContent = pages.length + ' stran';
+}
+
+function exportCSV(){
+  const lines = pages.map((p,i)=> `${i+1}\t${p.department.toUpperCase()}\t${p.status}\t${(p.img||p.pdfData) ? 'Má vizuál' : 'Chybí'}\t${p.note}`);
+  const csv = 'Strana\tOddělení\tStav\tObrázek\tPoznámka\n' + lines.join('\n');
+  const blob = new Blob([csv], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (document.getElementById('title').value || 'flatplan') + '_export.txt';
+  a.click();
+}
+
+initData();
+</script>
+</body>
+</html>
