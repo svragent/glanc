@@ -19,10 +19,14 @@
     --amber: #d99a3f;
     --green: #5b8c5a;
     
-    --dept-redakce: #38bdf8;
-    --dept-moda: #e879f9;
-    --dept-inzerce: #facc15;
-    --dept-kultura: #4ade80;
+    --dept-redakce: #f472b6;
+    --dept-inzerce: #5b8c5a;
+    --dept-mkt: #d99a3f;
+    --dept-stylebook: #e0813f;
+    --dept-redakce-tint: #fce7f3;
+    --dept-inzerce-tint: #dcecdc;
+    --dept-mkt-tint: #faf0dc;
+    --dept-stylebook-tint: #fbe8d9;
   }
   *{box-sizing:border-box;}
   body{
@@ -38,8 +42,8 @@
   }
   .masthead{display:flex; align-items:baseline; gap:14px;}
   .masthead input{
-    font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:1px;
-    background:none; border:none; color:var(--ink); outline:none;
+    font-family:'Bebas Neue',sans-serif; font-size:44px; letter-spacing:1px;
+    background:none; border:none; color:var(--red); font-weight:700; outline:none;
     border-bottom:1px solid transparent;
   }
   .masthead input:focus{border-bottom:1px solid var(--red);}
@@ -48,10 +52,17 @@
     font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim);
     display:flex; align-items:center; gap:6px;
   }
+  .date-box{
+    border:1px solid var(--line); border-radius:3px; padding:6px 10px;
+    background:var(--bg-raised);
+  }
+  .date-box-highlight{
+    border-color:var(--red); color:var(--red); font-weight:600;
+  }
   .dates-bar input[type=date]{
     font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink);
-    background:var(--bg-raised); border:1px solid var(--line); border-radius:3px;
-    padding:4px 6px;
+    background:transparent; border:none; border-left:1px solid var(--line);
+    padding:2px 0 2px 6px; margin-left:2px;
   }
   .toolbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .toolbar label, .toolbar button{
@@ -93,15 +104,19 @@
   }
   
   main#grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(160px,1fr));
-    gap:20px 10px; width: 1400px; margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    align-content:flex-start;
+    row-gap:20px; column-gap:0;
+    width: 1400px; margin:0 auto;
     position: relative;
   }
 
   .page-card {
     display: flex;
     flex-direction: column;
+    width: 166px;
+    flex: 0 0 166px;
     background: var(--bg-raised);
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -148,6 +163,80 @@
     color: var(--ink);
   }
 
+  .page-label-band {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 6px 6px 5px;
+    background: rgba(255,255,255,0.88);
+    border-bottom: 2px solid var(--dept-redakce);
+    z-index: 5;
+  }
+  .page[data-dept="inzerce"] .page-label-band { border-bottom-color: var(--dept-inzerce); }
+  .page[data-dept="mkt"] .page-label-band { border-bottom-color: var(--dept-mkt); }
+  .page[data-dept="stylebook"] .page-label-band { border-bottom-color: var(--dept-stylebook); }
+
+  .page-rubrika {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--red);
+    outline: none;
+    cursor: text;
+    min-height: 11px;
+  }
+
+  .page-name-edit {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    cursor: text;
+    min-height: 15px;
+    word-break: break-word;
+  }
+  .page-rubrika:focus, .page-name-edit:focus {
+    box-shadow: 0 0 0 1px var(--red);
+    background: #fff;
+  }
+  .page-rubrika:empty:before {
+    content: attr(data-placeholder);
+    color: var(--ink-dim);
+  }
+  .page-name-edit:empty:before {
+    content: attr(data-placeholder);
+    color: var(--ink-dim);
+    font-weight: 400;
+  }
+
+  .page-subtitle-chip {
+    position: absolute;
+    bottom: 4px; left: 4px; right: 4px;
+    background: rgba(255,255,255,0.88);
+    border-radius: 2px;
+    padding: 2px 5px;
+    z-index: 5;
+  }
+  .page-subtitle-edit {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    color: var(--ink-dim);
+    outline: none;
+    cursor: text;
+    text-align: center;
+    min-height: 12px;
+  }
+  .page-subtitle-edit:focus {
+    box-shadow: 0 0 0 1px var(--red);
+    background: #fff;
+  }
+  .page-subtitle-edit:empty:before {
+    content: attr(data-placeholder);
+    color: var(--ink-dim);
+  }
+
   .page-actions-group {
     display: flex;
     align-items: center;
@@ -165,7 +254,22 @@
     padding: 1px 2px;
     outline: none;
     cursor: pointer;
-    max-width: 65px;
+    max-width: 48px;
+    flex-shrink: 0;
+  }
+
+  .ad-format-badge {
+    position: absolute;
+    top: 4px; right: 4px;
+    z-index: 6;
+    background: var(--red);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 2px;
+    letter-spacing: 0.3px;
   }
 
   .status {
@@ -187,9 +291,14 @@
     overflow: hidden;
     user-select: none;
   }
-  .page[data-dept="moda"] { border-top-color: var(--dept-moda); }
   .page[data-dept="inzerce"] { border-top-color: var(--dept-inzerce); }
-  .page[data-dept="kultura"] { border-top-color: var(--dept-kultura); }
+  .page[data-dept="mkt"] { border-top-color: var(--dept-mkt); }
+  .page[data-dept="stylebook"] { border-top-color: var(--dept-stylebook); }
+
+  .page.is-empty[data-dept="redakce"] { background: var(--dept-redakce-tint); }
+  .page.is-empty[data-dept="inzerce"] { background: var(--dept-inzerce-tint); }
+  .page.is-empty[data-dept="mkt"] { background: var(--dept-mkt-tint); }
+  .page.is-empty[data-dept="stylebook"] { background: var(--dept-stylebook-tint); }
 
   .page.spine-left{box-shadow:inset -4px 0 8px -3px rgba(0,0,0,.7);}
   .page.spine-right{box-shadow:inset 4px 0 8px -3px rgba(0,0,0,.7);}
@@ -238,6 +347,20 @@
     width: 100%;
   }
 
+  .page-num-label {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    padding: 4px 0 2px;
+    cursor: text;
+    outline: none;
+  }
+  .page-num-label:focus {
+    color: var(--ink);
+    background: var(--bg-raised);
+  }
+
   #modal{
     position:fixed; inset:0; background:rgba(245,243,238,.94);
     display:none; align-items:center; justify-content:center; z-index:1000; padding:40px;
@@ -250,6 +373,28 @@
     font-size: 11px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace;
     margin-right: 8px;
   }
+
+  .unmatched-notice {
+    position: fixed;
+    top: 64px; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    background: #fdf1dc;
+    border: 1px solid var(--amber);
+    color: var(--ink);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 700px;
+    align-items: center;
+    gap: 10px;
+  }
+  .unmatched-notice button {
+    background: none; border: none; cursor: pointer;
+    font-weight: 600; font-size: 13px; color: var(--ink-dim);
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -259,15 +404,19 @@
     <input id="title" value="GLANC" onchange="saveData()"/>
   </div>
   <div class="dates-bar">
-    <label>Vychází:
+    <label class="date-box">Vychází:
       <input type="date" id="dateVychazi" onchange="saveData()"/>
     </label>
-    <label>Data do tiskárny:
+    <label class="date-box">Data do tiskárny:
       <input type="date" id="dateTiskarna" onchange="saveData()"/>
+    </label>
+    <label class="date-box date-box-highlight">ODEVZDÁNÍ MATERIÁLY REDAKCE:
+      <input type="date" id="dateOdevzdani" onchange="saveData()"/>
     </label>
   </div>
   <div class="toolbar">
     <span class="hint-banner">🖱️ Levé tl. = Posun | Pravé tl. = Přesun karty (s animací)</span>
+    <span class="hint-banner" id="buildVersion" style="opacity:0.6;"></span>
     <span class="count" id="pageCount">0 stran</span>
     <button id="watchBtn" onclick="toggleWatchFolder()">📁 Sledovat složku</button>
     <button onclick="addSlot()">+ Přidat stránku</button>
@@ -283,6 +432,8 @@
     <button onclick="clearAll()" style="color:var(--red);">Vymazat vše</button>
   </div>
 </header>
+
+<div id="unmatchedNotice" class="unmatched-notice" style="display:none;"></div>
 
 <div id="viewport">
   <div id="canvas">
@@ -302,6 +453,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let pages = [];
 let replacingIdx = null;
+let unmatchedFileNames = [];
+const BUILD_VERSION = 'v2.1 (2026-09-10)';
 
 let dirHandle = null;
 let fileTimestamps = {};
@@ -338,7 +491,7 @@ function setupSmoothRightClickDrag() {
     if (!card || ['INPUT', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
 
     originalCard = card;
-    const cards = Array.from(grid.children);
+    const cards = Array.from(grid.querySelectorAll('.page-card'));
     dragStartIndex = cards.indexOf(card);
     dragCurrentIndex = dragStartIndex;
 
@@ -376,7 +529,7 @@ function setupSmoothRightClickDrag() {
     cloneCard.style.top = `${e.clientY - offsetY}px`;
 
     // Detekce prvku pod kursořem
-    const cards = Array.from(grid.children);
+    const cards = Array.from(grid.querySelectorAll('.page-card'));
     const targetCard = cards.find(c => {
       if (c === originalCard) return false;
       const r = c.getBoundingClientRect();
@@ -433,6 +586,7 @@ function resetZoom() {
 }
 
 function initData() {
+  document.getElementById('buildVersion').textContent = BUILD_VERSION;
   const saved = localStorage.getItem('flatplan_pages');
   const savedTitle = localStorage.getItem('flatplan_title');
   if (savedTitle) document.getElementById('title').value = savedTitle;
@@ -440,6 +594,8 @@ function initData() {
   if (savedVychazi) document.getElementById('dateVychazi').value = savedVychazi;
   const savedTiskarna = localStorage.getItem('flatplan_date_tiskarna');
   if (savedTiskarna) document.getElementById('dateTiskarna').value = savedTiskarna;
+  const savedOdevzdani = localStorage.getItem('flatplan_date_odevzdani');
+  if (savedOdevzdani) document.getElementById('dateOdevzdani').value = savedOdevzdani;
   
   if (saved) {
     pages = JSON.parse(saved);
@@ -457,10 +613,11 @@ function saveData() {
   localStorage.setItem('flatplan_title', document.getElementById('title').value);
   localStorage.setItem('flatplan_date_vychazi', document.getElementById('dateVychazi').value);
   localStorage.setItem('flatplan_date_tiskarna', document.getElementById('dateTiskarna').value);
+  localStorage.setItem('flatplan_date_odevzdani', document.getElementById('dateOdevzdani').value);
 }
 
 function newPage(){
-  return { id: crypto.randomUUID(), pdfData: null, pdfPageIndex: 1, img: null, status: 'missing', department: 'redakce', note: '' };
+  return { id: crypto.randomUUID(), name: '', subtitle: '', rubrika: '', adFormat: '', pageNumLabel: '', pdfData: null, pdfPageIndex: 1, img: null, status: 'missing', department: 'redakce', note: '' };
 }
 
 function addSlot(){
@@ -547,6 +704,7 @@ function setupFolderDrop() {
     
     if (files.length > 0) {
       files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+      unmatchedFileNames = [];
       for (const file of files) {
         if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
           await processPDF(file);
@@ -554,6 +712,7 @@ function setupFolderDrop() {
           await processImage(file);
         }
       }
+      showUnmatchedNotice(unmatchedFileNames);
       saveData();
       render();
     }
@@ -580,6 +739,7 @@ async function scanEntry(entry, fileList) {
 async function bulkUpload(e){
   const files = Array.from(e.target.files);
   files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+  unmatchedFileNames = [];
   for (const file of files) {
     if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
       await processPDF(file);
@@ -587,6 +747,7 @@ async function bulkUpload(e){
       await processImage(file);
     }
   }
+  showUnmatchedNotice(unmatchedFileNames);
   e.target.value = '';
   saveData();
   render();
@@ -601,7 +762,8 @@ function processImage(file) {
         pages[replacingIdx].pdfData = null;
         pages[replacingIdx].status = 'draft';
       } else {
-        insertImageToGrid(e.target.result, null);
+        const matched = insertImageToGrid(e.target.result, null, 1, file.name);
+        if (!matched) unmatchedFileNames.push(file.name);
       }
       resolve();
     };
@@ -619,35 +781,57 @@ async function processPDF(file) {
   const base64Pdf = btoa(binary);
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  
+  let matchedAny = false;
+
   for (let i = 1; i <= pdf.numPages; i++) {
     if(replacingIdx !== null) {
       pages[replacingIdx].pdfData = base64Pdf;
       pages[replacingIdx].pdfPageIndex = i;
       pages[replacingIdx].img = null;
       pages[replacingIdx].status = 'draft';
+      matchedAny = true;
       break;
     } else {
-      insertImageToGrid(null, base64Pdf, i);
+      const matched = insertImageToGrid(null, base64Pdf, i, file.name);
+      if (matched) matchedAny = true;
     }
   }
+
+  if (!matchedAny && replacingIdx === null) unmatchedFileNames.push(file.name);
 }
 
-function insertImageToGrid(imgUrl, pdfData = null, pageIdx = 1) {
-  let emptyIdx = pages.findIndex(p => !p.img && !p.pdfData);
-  if (emptyIdx !== -1) {
-    pages[emptyIdx].img = imgUrl;
-    pages[emptyIdx].pdfData = pdfData;
-    pages[emptyIdx].pdfPageIndex = pageIdx;
-    pages[emptyIdx].status = 'draft';
-  } else {
-    const p = newPage();
-    p.img = imgUrl;
-    p.pdfData = pdfData;
-    p.pdfPageIndex = pageIdx;
-    p.status = 'draft';
-    pages.push(p);
-  }
+function normalizeForMatch(str){
+  return (str || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function findPageIndexByFileName(fileName){
+  if(!fileName) return -1;
+  const base = fileName.replace(/\.[^/.]+$/, '');
+  const normFile = normalizeForMatch(base);
+  if(!normFile) return -1;
+  const idx = pages.findIndex(p => {
+    const normName = normalizeForMatch(p.name);
+    if (normName.length < 2) return false;
+    return normFile.includes(normName) || normName.includes(normFile);
+  });
+  return idx;
+}
+
+function insertImageToGrid(imgUrl, pdfData = null, pageIdx = 1, fileName = ''){
+  const targetIdx = findPageIndexByFileName(fileName);
+  if (targetIdx === -1) return false;
+  pages[targetIdx].img = imgUrl;
+  pages[targetIdx].pdfData = pdfData;
+  pages[targetIdx].pdfPageIndex = pageIdx;
+  pages[targetIdx].status = 'draft';
+  return true;
+}
+
+function showUnmatchedNotice(names){
+  const el = document.getElementById('unmatchedNotice');
+  if(!names || names.length === 0){ el.style.display = 'none'; return; }
+  el.innerHTML = `⚠️ Bez shody s pojmenovanou kartou (nenahráno): ${names.join(', ')} <button onclick="document.getElementById('unmatchedNotice').style.display='none'">✕</button>`;
+  el.style.display = 'flex';
 }
 
 async function toggleWatchFolder() {
@@ -693,20 +877,28 @@ async function scanFolderForChanges() {
     fileList.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
 
     let hasChanges = false;
+    unmatchedFileNames = [];
 
     for (const file of fileList) {
       const lastMod = file.lastModified;
       if (!fileTimestamps[file.name] || fileTimestamps[file.name] !== lastMod) {
-        fileTimestamps[file.name] = lastMod;
-        hasChanges = true;
-        
+        const beforeUnmatchedCount = unmatchedFileNames.length;
+
         if (file.type === "application/pdf" || file.name.endsWith('.pdf')) {
           await processPDF(file);
         } else {
           await processImage(file);
         }
+
+        const wasMatched = unmatchedFileNames.length === beforeUnmatchedCount;
+        if (wasMatched) {
+          fileTimestamps[file.name] = lastMod;
+          hasChanges = true;
+        }
       }
     }
+
+    if (unmatchedFileNames.length > 0) showUnmatchedNotice(unmatchedFileNames);
 
     if (hasChanges) {
       saveData();
@@ -761,6 +953,32 @@ function updateDept(idx, dept){
   render();
 }
 
+function updateAdFormat(idx, val){
+  pages[idx].adFormat = val;
+  saveData();
+  render();
+}
+
+function updatePageNumLabel(idx, val){
+  pages[idx].pageNumLabel = val;
+  saveData();
+}
+
+function updateName(idx, val){
+  pages[idx].name = val;
+  saveData();
+}
+
+function updateRubrika(idx, val){
+  pages[idx].rubrika = val;
+  saveData();
+}
+
+function updateSubtitle(idx, val){
+  pages[idx].subtitle = val;
+  saveData();
+}
+
 function updateNote(idx, val){
   pages[idx].note = val;
   saveData();
@@ -779,6 +997,7 @@ function exportJSON() {
     title: document.getElementById('title').value,
     dateVychazi: document.getElementById('dateVychazi').value,
     dateTiskarna: document.getElementById('dateTiskarna').value,
+    dateOdevzdani: document.getElementById('dateOdevzdani').value,
     pages: pages
   }));
   const a = document.createElement('a');
@@ -799,6 +1018,7 @@ function importJSON(e) {
         if(data.title) document.getElementById('title').value = data.title;
         if(data.dateVychazi) document.getElementById('dateVychazi').value = data.dateVychazi;
         if(data.dateTiskarna) document.getElementById('dateTiskarna').value = data.dateTiskarna;
+        if(data.dateOdevzdani) document.getElementById('dateOdevzdani').value = data.dateOdevzdani;
         saveData();
         render();
       }
@@ -844,25 +1064,47 @@ function render(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  pages.forEach((p, idx)=>{
+  // Sestavení skupin: 1. strana sama, dvoustrany (páry), poslední lichá strana sama
+  const CARD_W = 166, GAP = 10, ROW_W = 1400;
+  const groups = [];
+  let gi = 0;
+  while (gi < pages.length) {
+    if (gi === 0) { groups.push([0]); gi = 1; continue; }
+    if (gi === pages.length - 1) { groups.push([gi]); gi++; continue; }
+    groups.push([gi, gi + 1]); gi += 2;
+  }
+
+  let rowWidth = 0;
+  groups.forEach(group => {
+    const groupWidth = group.length === 2 ? CARD_W * 2 : CARD_W;
+    const addWidth = rowWidth === 0 ? groupWidth : GAP + groupWidth;
+    if (rowWidth > 0 && rowWidth + addWidth > ROW_W) {
+      const brk = document.createElement('div');
+      brk.style.flexBasis = '100%';
+      brk.style.height = '0';
+      brk.style.margin = '0';
+      grid.appendChild(brk);
+      rowWidth = 0;
+    }
+    rowWidth += (rowWidth === 0 ? groupWidth : GAP + groupWidth);
+
+    group.forEach((idx, posInGroup) => {
+    const p = pages[idx];
     const isRight = idx === 0 ? true : (idx % 2 === 1);
     
     const card = document.createElement('div');
     card.className = 'page-card';
+    card.style.marginRight = (posInGroup === group.length - 1) ? '10px' : '0';
+
 
     const headerBar = document.createElement('div');
     headerBar.className = 'page-header-bar';
-
-    const num = document.createElement('div');
-    num.className = 'num';
-    num.textContent = idx + 1;
-    headerBar.appendChild(num);
 
     const select = document.createElement('select');
     select.className = 'dept-select';
     select.onmousedown = (e) => e.stopPropagation();
     select.onchange = (e) => updateDept(idx, e.target.value);
-    ['redakce', 'moda', 'inzerce', 'kultura'].forEach(d => {
+    ['redakce', 'inzerce', 'mkt', 'stylebook'].forEach(d => {
       const opt = document.createElement('option');
       opt.value = d;
       opt.textContent = d.toUpperCase();
@@ -870,6 +1112,27 @@ function render(){
       select.appendChild(opt);
     });
     headerBar.appendChild(select);
+
+    const adFormatSelect = document.createElement('select');
+    adFormatSelect.className = 'dept-select adformat-select';
+    adFormatSelect.title = 'Formát inzerce';
+    adFormatSelect.onmousedown = (e) => e.stopPropagation();
+    adFormatSelect.onchange = (e) => updateAdFormat(idx, e.target.value);
+    [
+      ['', '—'],
+      ['celostrana', 'Celá'],
+      ['1/2v', '1/2 V'],
+      ['1/2s', '1/2 Š'],
+      ['1/3v', '1/3 V'],
+      ['1/3s', '1/3 Š']
+    ].forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      if((p.adFormat || '') === val) opt.selected = true;
+      adFormatSelect.appendChild(opt);
+    });
+    headerBar.appendChild(adFormatSelect);
 
     // Skupina pro tlačítka v liště
     const actionsGroup = document.createElement('div');
@@ -917,9 +1180,57 @@ function render(){
     card.appendChild(headerBar);
 
     const pageDiv = document.createElement('div');
-    pageDiv.className = `page ${isRight ? 'spine-right' : 'spine-left'}`;
+    pageDiv.className = `page ${isRight ? 'spine-right' : 'spine-left'}${(!p.img && !p.pdfData) ? ' is-empty' : ''}`;
     pageDiv.dataset.dept = p.department;
     pageDiv.dataset.id = p.id;
+
+    const labelBand = document.createElement('div');
+    labelBand.className = 'page-label-band';
+
+    const rubrika = document.createElement('div');
+    rubrika.className = 'page-rubrika';
+    rubrika.contentEditable = 'true';
+    rubrika.dataset.placeholder = 'rubrika…';
+    rubrika.textContent = p.rubrika || '';
+    rubrika.onmousedown = (e) => e.stopPropagation();
+    rubrika.onclick = (e) => e.stopPropagation();
+    rubrika.oninput = (e) => updateRubrika(idx, e.target.textContent);
+    labelBand.appendChild(rubrika);
+
+    const nameEdit = document.createElement('div');
+    nameEdit.className = 'page-name-edit';
+    nameEdit.contentEditable = 'true';
+    nameEdit.dataset.placeholder = 'název…';
+    nameEdit.textContent = p.name || '';
+    nameEdit.onmousedown = (e) => e.stopPropagation();
+    nameEdit.onclick = (e) => e.stopPropagation();
+    nameEdit.oninput = (e) => updateName(idx, e.target.textContent);
+    labelBand.appendChild(nameEdit);
+
+    pageDiv.appendChild(labelBand);
+
+    if (p.adFormat) {
+      const adFormatLabels = { 'celostrana':'CELÁ', '1/2v':'1/2 V', '1/2s':'1/2 Š', '1/3v':'1/3 V', '1/3s':'1/3 Š' };
+      const adBadge = document.createElement('div');
+      adBadge.className = 'ad-format-badge';
+      adBadge.textContent = adFormatLabels[p.adFormat] || p.adFormat;
+      pageDiv.appendChild(adBadge);
+    }
+
+    const subtitleChip = document.createElement('div');
+    subtitleChip.className = 'page-subtitle-chip';
+
+    const subtitleEdit = document.createElement('div');
+    subtitleEdit.className = 'page-subtitle-edit';
+    subtitleEdit.contentEditable = 'true';
+    subtitleEdit.dataset.placeholder = '(redaktor)';
+    subtitleEdit.textContent = p.subtitle || '';
+    subtitleEdit.onmousedown = (e) => e.stopPropagation();
+    subtitleEdit.onclick = (e) => e.stopPropagation();
+    subtitleEdit.oninput = (e) => updateSubtitle(idx, e.target.textContent);
+    subtitleChip.appendChild(subtitleEdit);
+
+    pageDiv.appendChild(subtitleChip);
 
     if(p.pdfData || p.img){
       const canvasEl = document.createElement('canvas');
@@ -952,15 +1263,32 @@ function render(){
 
     card.appendChild(footerBar);
 
+    const pageNumLabel = document.createElement('div');
+    pageNumLabel.className = 'page-num-label';
+    pageNumLabel.contentEditable = 'true';
+    pageNumLabel.textContent = p.pageNumLabel || (idx + 1);
+    pageNumLabel.title = 'Klikni pro úpravu (lze zapsat i římské číslo, např. II)';
+    pageNumLabel.onmousedown = (e) => e.stopPropagation();
+    pageNumLabel.onclick = (e) => e.stopPropagation();
+    pageNumLabel.oninput = (e) => updatePageNumLabel(idx, e.target.textContent.trim());
+    pageNumLabel.onblur = (e) => {
+      if (!e.target.textContent.trim()) {
+        e.target.textContent = idx + 1;
+        updatePageNumLabel(idx, '');
+      }
+    };
+    card.appendChild(pageNumLabel);
+
     grid.appendChild(card);
+    });
   });
 
   document.getElementById('pageCount').textContent = pages.length + ' stran';
 }
 
 function exportCSV(){
-  const lines = pages.map((p,i)=> `${i+1}\t${p.department.toUpperCase()}\t${p.status}\t${(p.img||p.pdfData) ? 'Má vizuál' : 'Chybí'}\t${p.note}`);
-  const csv = 'Strana\tOddělení\tStav\tObrázek\tPoznámka\n' + lines.join('\n');
+  const lines = pages.map((p,i)=> `${p.pageNumLabel || (i+1)}\t${p.rubrika||''}\t${p.name||''}\t${p.subtitle||''}\t${p.department.toUpperCase()}\t${p.adFormat||''}\t${p.status}\t${(p.img||p.pdfData) ? 'Má vizuál' : 'Chybí'}\t${p.note}`);
+  const csv = 'Strana\tRubrika\tNázev\tRedaktor\tOddělení\tFormát inzerce\tStav\tObrázek\tPoznámka\n' + lines.join('\n');
   const blob = new Blob([csv], {type:'text/plain;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
