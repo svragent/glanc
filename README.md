@@ -1,2 +1,0 @@
-# glanc
-flatplan-editor-clean
